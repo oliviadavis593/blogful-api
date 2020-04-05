@@ -28,7 +28,8 @@ describe.only('Articles Endpoints', function() {
                     .expect(200, [])
             })
         })
-        context('Given there are no ar ticles in the database', () => {
+
+        context('Given there are articles in the database', () => {
             const testArticles = makeArticlesArray()
 
             beforeEach('insert articles', () => {
@@ -42,7 +43,7 @@ describe.only('Articles Endpoints', function() {
                     .get('/articles')
                     .expect(200, testArticles)
             })
-        })
+        }) 
     })
 
     describe(`GET /articles/:article_id`, () => {
@@ -54,7 +55,7 @@ describe.only('Articles Endpoints', function() {
                     .expect(404, { error: { message: `Article doesn't exist` } })
             })
         })
-        context('Given ther are articles in the database', () => {
+        context('Given there are articles in the database', () => {
             const testArticles = makeArticlesArray()
 
             beforeEach('insert articles', () => {
@@ -63,13 +64,55 @@ describe.only('Articles Endpoints', function() {
                     .insert(testArticles)
             })
 
-            it('responds with 200 and the specified article', () => {
+            it('GET /articles/:article_id responds with 200 and the specified article', () => {
                 const articleId = 2
                 const expectedArticle = testArticles[articleId - 1]
                 return supertest(app)
                     .get(`/articles/${articleId}`)
                     .expect(200, expectedArticle)
             })
+         //TO DO:  NOT WORKING PROPERLY (time exceeded 2000ms)
+        })
+    })
+
+    //POST /articles
+    describe(`POST /articles`, () => {
+        it(`creates an article, responding with 201 and the new article`, function() {
+            this.retries(3) //
+            const newArticle = {
+                title: 'Test new article',
+                style: 'Listicle',
+                content: 'Test new article content...'
+            }
+            //implementation to ensure that article is being created 
+            return supertest(app)
+                .post('/articles')
+                .send(newArticle)
+                .expect(201)
+                .expect(res => {
+                    expect(res.body.title).to.eql(newArticle.title)
+                    expect(res.body.style).to.eql(newArticle.style)
+                    expect(res.body.content).to.eql(newArticle.content)
+                    expect(res.body).to.have.property('id')
+                    //adding 1st assertion to test => response should contain location header for new article
+                    expect(res.headers.location).to.eql(`/articles/${res.body.id}`)
+                    //2nd assertion => generate current d-t using new Date() w. no args
+                    //.toLocaleString => fixes milisecond difference that makes test fail 
+                    const expected = new Date().toLocaleString()
+                    const actual = new Date(res.body.date_published).toLocaleString()
+                    expect(actual).to.eql(expected)
+                })
+                //utlizing working GET endpoints to validate that POST adds article to the db
+                //chained .then block off supertest request
+                //2nd req is for GET /article/:article_id => validates that both response bodies
+                //.. (POST & GET response body) match
+                //used impplicit return inside .then => Mocha knows to wait for both requests to resolve
+                .then(res => 
+                    supertest(app)
+                        .get(`/articles/${res.body.id}`)
+                        .expect(res.body)    
+                )
         })
     })
 })
+
