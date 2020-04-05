@@ -4,7 +4,7 @@ const morgan = require('morgan')
 const cors = require('cors')
 const helmet = require('helmet')
 const { NODE_ENV } = require('./config') 
-const ArticlesSerivce = require('./articles-service')
+const ArticlesSerivce = require('./articles/articles-service')
 
 const app = express()
 const jsonParser = express.json()
@@ -29,7 +29,7 @@ app.get('/articles', (req, res, next) => {
     .catch(next)
 })
 
-app.get('articles/:article_id', (req, res, next) => {
+app.get('/articles/:article_id', (req, res, next) => {
     const knexInstance = req.app.get('db')
     ArticlesSerivce.getById(knexInstance, req.params.article_id)
         .then(article => {
