@@ -71,12 +71,31 @@ describe('Articles Endpoints', function() {
                     .get(`/articles/${articleId}`)
                     .expect(200, expectedArticle)
             })
-         //TO DO:  NOT WORKING PROPERLY (time exceeded 2000ms)
+        })
+
+        //Test that XSS sanitization takes place on GET /articles/:article_id endpoint
+        context(`Given an XSS attack article`, () => {
+            const maliciousArticle = {
+                id: 911, 
+                title: 'Naughty naughty very naughty <script>alert("xss");</script>',
+                style: 'How-to',
+                content: `Bad image <img src="https://url.to.file.which/does-not.exist" onerror="alert(document.cookie);">. But not <strong>all</strong> bad.`
+            }
+
+            beforeEach('removes XSS attack content', () => {
+                return supertest(app)
+                    .get(`/articles/${maliciousArticle.id}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body.title).to.eql('Naughty naughty very naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;')
+                        expect(res.body.content).to.eql(`Bad image <img src="https://url.to.file.which/does-not.exist">. But not <strong>all</strong> bad.`)
+                    })
+            })
         })
     })
 
     //POST /articles
-    describe.only(`POST /articles`, () => {
+    describe(`POST /articles`, () => {
         it(`creates an article, responding with 201 and the new article`, function() {
             this.retries(3) //
             const newArticle = {
