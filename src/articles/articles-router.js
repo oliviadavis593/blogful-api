@@ -12,6 +12,7 @@ const serializeArticle = article => ({
     title: xss(article.title), //sanitize title
     content: xss(article.content), //sanitize content
     date_published: article.date_published,
+    author: article.author
   })
 
 articlesRouter 
@@ -31,7 +32,7 @@ articlesRouter
     .post(jsonParser, (req, res, next) => {
         //this allows our POST test to pass 
         //creating the article in the db 
-        const { title, content, style } = req.body
+        const { title, content, style, author } = req.body
         const newArticle = { title, content, style }
 
         /*
@@ -60,6 +61,8 @@ articlesRouter
                 })
             }
         }
+
+        newArticle.author = author
 
         ArticlesService.insertArticle(
             req.app.get('db'),
